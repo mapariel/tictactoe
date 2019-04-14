@@ -39,7 +39,8 @@ class Combinatoire:
 
 
 
-
+# a cell is a piece of the board. It has coordinates (ex : [1,2,1,0] )
+# and a mark : 'X', 'O' or '_'
 class Cell:   
     def __init__(self,mark,coordinates):
         self.mark = mark
@@ -48,26 +49,26 @@ class Cell:
     def __repr__(self):
         return str(self.mark)
             
-
+# this  class represents a game of tic tac toe (morpion in French)
 class Morpion:
     
      def __init__(self,dim,side):
-         self.dim = dim   # the dimension should be 2,3 or 4
-         self.side = side  # the side of the hypercube (4 is reasonnable to play)
+         self.dim = dim   # the dimension should be (2,3 or 4)
+         self.side = side  # the side of the board (2,3 or 4)
          
-         # create the tuple for the shape
+         # create the tuple for the shape of the board
          s=()
          for i in range(0,dim):
             s+=(side,)
 
-         self.board = np.empty(dtype=object,shape=s)  # the game board, players pu X or O
+         self.board = np.empty(dtype=object,shape=s)  # the game board, each element is a cell
          self.starter=0   # 1 the cross starts 0 the O starts
-         self.moves = np.zeros(dtype=int,shape=(0,dim))  # the moves made on this game
+         self.moves = np.zeros(dtype=int,shape=(0,dim))  # the moves made on this game in chronologicle order
          self.game_over=False
          self.initialize_board()
 
 
-     # filll the  boards with the cells
+     # fill the  board with the cells in order to start the game
      def initialize_board(self):
             ensemble = np.arange(self.side)
             liste = Combinatoire.cartesian_product(self.dim,ensemble)
@@ -75,10 +76,7 @@ class Morpion:
                 t= Combinatoire.tuple(cell) 
                 self.board[t]=Cell('_',cell)    
 
-
-
-
-     # who is playing (the two players alternate)   
+     # who is playing at the moment (the two players alternate)   
      def who_is_playing(self):
          if self.moves[:,1].size%2 == self.starter:
              return "O"
@@ -97,7 +95,7 @@ class Morpion:
         return False
   
 
-     # the cell the next player is puting on the board
+     # the next player is playing on this cell the board
      def play(self,cell):  
          tcell = Combinatoire.tuple(cell)
 
@@ -138,7 +136,7 @@ class Morpion:
                          reponse = False
              return reponse
 
-        # are those three cells aligned ? 
+     # are those three cells aligned ? 
      def are_aligned(self,cellA,cellB,cellC):
             Delta1 = cellC-cellB
             Delta2 = cellB-cellA
@@ -152,7 +150,7 @@ class Morpion:
             , Delta1[Delta1!=0][0]*Delta2)
             )
      
-     # return the winning line (when they were played)
+     # tests if there is a winning line (and returns index of the corresponding moves)
      def winner_game(self):
          size = self.moves[:,1].size-1
          winner = np.zeros(shape=(self.side),dtype=int)
@@ -169,7 +167,8 @@ class Morpion:
                              count+=1
                          if count==self.side: 
                              return winner
-                         
+     
+     # returns the winner when the game is finished                    
      def who_is_winner(self):
          if self.game_over:
              if self.winner_game() is None:
@@ -180,16 +179,15 @@ class Morpion:
                  return "O is the winner" 
 
 
+
+# this enables to test a game
+# the computer plays randomly                  
 if __name__ == '__main__':
     
     m = Morpion(2,3)
     counter =  0
-  
-
-    
     print(m.who_is_playing()," starts")
-    
-    
+   
     while True:
         
         if m.play_random() is not None:         
