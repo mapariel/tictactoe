@@ -10,7 +10,7 @@ import numpy as np
 
 class Combinatoire:
 # makes the list (as numpy arrays) of the elements of ensemble^n
-# set is a numpy array  
+# ensemble is a numpy array   
    @staticmethod 
    def cartesian_product(n,ensemble):
        if n==1:
@@ -42,9 +42,9 @@ class Combinatoire:
 # a cell is a piece of the board. It has coordinates (ex : [1,2,1,0] )
 # and a mark : 'X', 'O' or '_'
 class Cell:   
-    def __init__(self,mark,coordinates):
+    def __init__(self,mark,coords):
         self.mark = mark
-        self.coordinates = coordinates 
+        self.coords = coords 
     
     def __repr__(self):
         return str(self.mark)
@@ -89,22 +89,22 @@ class Morpion:
         empty_cells = self.board[cells=='_']
         if empty_cells.size>0:
             n = np.random.randint(0,high=empty_cells.size)
-            cell = empty_cells[n].coordinates 
+            cell = empty_cells[n].coords
             self.play(cell)
             return True
         return False
   
 
      # the next player is playing on this cell the board
-     def play(self,cell):  
-         tcell = Combinatoire.tuple(cell)
+     def play(self,coords):  
+         tcoords = Combinatoire.tuple(coords)
 
          if self.game_over:
              return False
          player = self.who_is_playing()
-         if self.board[tcell].mark=='_':
-             self.board[tcell].mark=player
-             self.moves = np.vstack((self.moves,cell))
+         if self.board[tcoords].mark=='_':
+             self.board[tcoords].mark=player
+             self.moves = np.vstack((self.moves,coords))
              # teste s'il reste des cases à jouer
              if self.board[self.get_marks()=='_'].size==0 :
                  self.game_over=True
@@ -122,10 +122,10 @@ class Morpion:
          marks = np.vectorize(mark)
          return(marks(self.board))
 
-     # two cells of the board are given
-     # this tells if a winning line ("break through") can be drawn through those cells
-     def is_break_through(self,cellA,cellB):
-             Delta = cellA-cellB
+     # two coords of the board are given
+     # this tells if a winning line ("break through") can be drawn through those points
+     def is_break_through(self,coordsA,coordsB):
+             Delta = coordsA-coordsB
              value = 0
              reponse = True
              for i in np.nditer(Delta):
@@ -136,10 +136,10 @@ class Morpion:
                          reponse = False
              return reponse
 
-     # are those three cells aligned ? 
-     def are_aligned(self,cellA,cellB,cellC):
-            Delta1 = cellC-cellB
-            Delta2 = cellB-cellA
+     # are those three points A, B and C cells aligned ? 
+     def are_aligned(self,coordsA,coordsB,coordsC):
+            Delta1 = coordsC-coordsB
+            Delta2 = coordsB-coordsA
             nul = np.zeros(dtype=int,shape=(0,self.dim))
             if np.array_equal(Delta1,nul): 
                 return False
@@ -155,14 +155,14 @@ class Morpion:
          size = self.moves[:,1].size-1
          winner = np.zeros(shape=(self.side),dtype=int)
          winner[0] = size
-         cellA = self.moves[winner[0]] 
+         coordsA = self.moves[winner[0]] 
          for winner[1] in range(winner[0]-2,0,-2):
-                 cellB=self.moves[winner[1]]
-                 if self.is_break_through(cellA,cellB):
+                 coordsB=self.moves[winner[1]]
+                 if self.is_break_through(coordsA,coordsB):
                      count = 2
                      for k in range (winner[1]-2,-1,-2):
-                         cellC=self.moves[k]
-                         if self.are_aligned(cellA,cellB,cellC):
+                         coordsC=self.moves[k]
+                         if self.are_aligned(coordsA,coordsB,coordsC):
                              winner[count]=k
                              count+=1
                          if count==self.side: 

@@ -26,9 +26,9 @@ class Player:
 
 class MorpionGUI:
 
-    cell_width=40
-    cell_border=3
-    cell_sep = 10
+    cell_width=40     # the width of the cells
+    cell_sep=3        # the speration space between the cells  
+    board_margin = 10 # the margin around the group of cells
     dim = 2
     side = 3
 
@@ -72,8 +72,8 @@ class MorpionGUI:
     # and on the lengths  width, border and sep
     def width(self):
         dim1 = self.cell_width
-        dim2 = self.cell_border
-        dim3 = self.cell_sep
+        dim2 = self.cell_sep
+        dim3 = self.board_margin
         side = self.morpion.side
         if (self.morpion.dim==2) | (self.morpion.dim==3):
             return (dim1+dim2)*side-dim2+2*dim3
@@ -84,8 +84,8 @@ class MorpionGUI:
     # and on the lengths  width, border and sep  
     def height(self):
         dim1 = self.cell_width
-        dim2 = self.cell_border
-        dim3 = self.cell_sep
+        dim2 = self.cell_sep
+        dim3 = self.board_margin
         side = self.morpion.side
         if (self.morpion.dim==2) | (self.morpion.dim==4):
             return self.width()
@@ -97,13 +97,13 @@ class MorpionGUI:
         ensemble = np.arange(0,self.morpion.side)
         liste = mp.Combinatoire.cartesian_product(self.morpion.dim,ensemble)
         for coord in liste:
-            self.draw_cell_border(coord)
+            self.draw_cell_sep(coord)
 
     # return, as a tuple, the top lef corner of a cell
     def get_top_left_corner(self,coord):
         dim1 = self.cell_width
-        dim2 = self.cell_border
-        dim3 = self.cell_sep
+        dim2 = self.cell_sep
+        dim3 = self.board_margin
         i=coord[0];j=coord[1]
         side= self.morpion.side 
         x=dim3+j*(dim1+dim2)
@@ -117,7 +117,7 @@ class MorpionGUI:
         return (x,y)        
     
     # draws the rectangle that corresponds to a cell, it's coordinates are given    
-    def draw_cell_border(self,coord):
+    def draw_cell_sep(self,coord):
         t = self.get_top_left_corner(coord)
         dim1 = self.cell_width
         x = t[0]
