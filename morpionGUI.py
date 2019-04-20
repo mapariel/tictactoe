@@ -26,7 +26,7 @@ class Player:
 
 class MorpionGUI:
 
-    cell_width=40     # the width of the cells
+    cell_width=30     # the width of the cells
     cell_sep=3        # the speration space between the cells  
     board_margin = 10 # the margin around the group of cells
     dim = 2
