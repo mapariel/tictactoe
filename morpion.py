@@ -10,7 +10,7 @@ import numpy as np
 
 class Combinatoire:
 # makes the list (as numpy arrays) of the elements of ensemble^n
-# ensemble is a numpy array   
+# set is a numpy array  
    @staticmethod 
    def cartesian_product(n,ensemble):
        if n==1:
@@ -39,36 +39,55 @@ class Combinatoire:
 
 
 
-# a cell is a piece of the board. It has coordinates (ex : [1,2,1,0] )
-# and a mark : 'X', 'O' or '_'
+
 class Cell:   
-    def __init__(self,mark,coords):
+    def __init__(self,mark,coordinates):
         self.mark = mark
-        self.coords = coords 
+        self.coordinates = coordinates 
     
     def __repr__(self):
         return str(self.mark)
             
-# this  class represents a game of tic tac toe (morpion in French)
+
 class Morpion:
     
      def __init__(self,dim,side):
-         self.dim = dim   # the dimension should be (2,3 or 4)
-         self.side = side  # the side of the board (2,3 or 4)
+         self.dim = dim   # the dimension should be 2,3 or 4
+         self.side = side  # the side of the hypercube (4 is reasonnable to play)
          
-         # create the tuple for the shape of the board
+         # create the tuple for the shape
          s=()
          for i in range(0,dim):
             s+=(side,)
 
-         self.board = np.empty(dtype=object,shape=s)  # the game board, each element is a cell
-         self.starter=0   # 1 the cross starts 0 the O starts
-         self.moves = np.zeros(dtype=int,shape=(0,dim))  # the moves made on this game in chronologicle order
+         self.board = np.empty(dtype=object,shape=s)  # the game board, players  X or O
+         self.starter=np.random.randint(0,2)   # 1 the cross starts 0 the O starts
+         self.moves = np.zeros(dtype=int,shape=(0,dim))  # the moves made on this game
          self.game_over=False
          self.initialize_board()
 
 
-     # fill the  board with the cells in order to start the game
+ 
+     # return a string representation of the game
+     # each line is one move. For instance :
+     #1 2
+     #0 0
+     #2 3
+     def output_moves(self):
+         result = ""
+         for i in range(self.moves.shape[0]):
+             row = self.moves[i,:]
+             row = [str(i) for i in row.tolist()]
+             result += " ".join(row)+"\n"
+         return result    
+     
+     # load the moves in this game. Replaces the existing moves 
+     def input_moves(self,input_string):
+         lines = input_string.splitlines()
+         for line in lines:
+             self.playS(line)
+
+     # fill the  boards with the cells
      def initialize_board(self):
             ensemble = np.arange(self.side)
             liste = Combinatoire.cartesian_product(self.dim,ensemble)
@@ -76,7 +95,27 @@ class Morpion:
                 t= Combinatoire.tuple(cell) 
                 self.board[t]=Cell('_',cell)    
 
-     # who is playing at the moment (the two players alternate)   
+     # simplement en 2D pour le moment
+     def board_as_string(self):
+        top = "+---"+"-"*(self.side-1)*4+"+\n"
+        board_s = top
+        for i in range(self.side):
+            row = self.board[i,:]
+            liste = row.tolist()
+            liste = [i.mark for i in liste]
+            board_s += "| "+" | ".join(liste)+" | \n"
+            board_s += top
+        board_s =  board_s.replace("_"," ")
+        if self.game_over:
+            if self.who_is_winner()=="":
+                board_s +="Game over ! \nThere is no winner."
+            else : board_s +="Game over ! \n"+self.who_is_winner()+" is the winner."
+        else : board_s +="next player  : "+self.who_is_playing() 
+        return board_s    
+
+
+
+     # who is playing (the two players alternate)   
      def who_is_playing(self):
          if self.moves[:,1].size%2 == self.starter:
              return "O"
@@ -89,22 +128,23 @@ class Morpion:
         empty_cells = self.board[cells=='_']
         if empty_cells.size>0:
             n = np.random.randint(0,high=empty_cells.size)
-            cell = empty_cells[n].coords
+            cell = empty_cells[n].coordinates 
             self.play(cell)
             return True
         return False
   
 
-     # the next player is playing on this cell the board
-     def play(self,coords):  
-         tcoords = Combinatoire.tuple(coords)
+     # the cell the next player is puting on the board
+     # cell is a numpy array 
+     def play(self,cell):  
+         tcell = Combinatoire.tuple(cell)
 
          if self.game_over:
              return False
          player = self.who_is_playing()
-         if self.board[tcoords].mark=='_':
-             self.board[tcoords].mark=player
-             self.moves = np.vstack((self.moves,coords))
+         if self.board[tcell].mark=='_':
+             self.board[tcell].mark=player
+             self.moves = np.vstack((self.moves,cell))
              # teste s'il reste des cases à jouer
              if self.board[self.get_marks()=='_'].size==0 :
                  self.game_over=True
@@ -113,6 +153,15 @@ class Morpion:
              return True
          return False
 
+     # the cell the next player is puting on the board, 
+     # stringcell is a string like ("2 1")
+     def playS(self,stringcell):
+        liste = stringcell.split()
+        liste = [int(i) for i in liste] 
+        cell = np.array(liste)
+        return self.play(cell)
+		 
+     
      
 
 
@@ -122,10 +171,10 @@ class Morpion:
          marks = np.vectorize(mark)
          return(marks(self.board))
 
-     # two coords of the board are given
-     # this tells if a winning line ("break through") can be drawn through those points
-     def is_break_through(self,coordsA,coordsB):
-             Delta = coordsA-coordsB
+     # two cells of the board are given
+     # this tells if a winning line ("break through") can be drawn through those cells
+     def is_break_through(self,cellA,cellB):
+             Delta = cellA-cellB
              value = 0
              reponse = True
              for i in np.nditer(Delta):
@@ -136,10 +185,10 @@ class Morpion:
                          reponse = False
              return reponse
 
-     # are those three points A, B and C cells aligned ? 
-     def are_aligned(self,coordsA,coordsB,coordsC):
-            Delta1 = coordsC-coordsB
-            Delta2 = coordsB-coordsA
+        # are those three cells aligned ? 
+     def are_aligned(self,cellA,cellB,cellC):
+            Delta1 = cellC-cellB
+            Delta2 = cellB-cellA
             nul = np.zeros(dtype=int,shape=(0,self.dim))
             if np.array_equal(Delta1,nul): 
                 return False
@@ -150,55 +199,67 @@ class Morpion:
             , Delta1[Delta1!=0][0]*Delta2)
             )
      
-     # tests if there is a winning line (and returns index of the corresponding moves)
+     # return the winning line (when they were played)
      def winner_game(self):
          size = self.moves[:,1].size-1
          winner = np.zeros(shape=(self.side),dtype=int)
          winner[0] = size
-         coordsA = self.moves[winner[0]] 
+         cellA = self.moves[winner[0]] 
          for winner[1] in range(winner[0]-2,0,-2):
-                 coordsB=self.moves[winner[1]]
-                 if self.is_break_through(coordsA,coordsB):
+                 cellB=self.moves[winner[1]]
+                 if self.is_break_through(cellA,cellB):
                      count = 2
                      for k in range (winner[1]-2,-1,-2):
-                         coordsC=self.moves[k]
-                         if self.are_aligned(coordsA,coordsB,coordsC):
+                         cellC=self.moves[k]
+                         if self.are_aligned(cellA,cellB,cellC):
                              winner[count]=k
                              count+=1
                          if count==self.side: 
                              return winner
-     
-     # returns the winner when the game is finished                    
+                         
      def who_is_winner(self):
          if self.game_over:
              if self.winner_game() is None:
-                 return "Match nul"
+                 return ""
              elif self.moves[:,1].size%2 == self.starter:
-                 return "X is the winner"
+                 return "X"
              else:
-                 return "O is the winner" 
+                 return "O" 
+             
+                
 
 
-
-# this enables to test a game
-# the computer plays randomly                  
-if __name__ == '__main__':
+if __name__ == '__main__':   
+    
     
     m = Morpion(2,3)
-    counter =  0
-    print(m.who_is_playing()," starts")
-   
+    moves="1 1\n0 1\n0 0"
+    m.input_moves(moves)
+
+
+
+    print(m.who_is_playing()," starts")  
     while True:
+        print(m.board_as_string())
+        stringcell = input()
+        if stringcell == "" : break
+        boolean = m.playS(stringcell)
+        if m.game_over: break
         
-        if m.play_random() is not None:         
-           counter += 1
-           if m.game_over:
-              break    # there is one winner
-        else :break    # the game is full
-    print(m.board)
+        
+        
+#        if m.play_random() is not None:         
+#           counter += 1
+#           if m.game_over:
+#              break    # there is one winner
+#        else :break    # the game is full
     
-    game = m.winner_game()        
-    print(game)
+    
+#    game = m.winner_game()        
+#    print(game)
+    print(m.board_as_string())
     print(m.who_is_winner())
-    print(counter," coups")
+    
+    print(m.output_moves())
+#    print(counter," coups")
     
