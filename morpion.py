@@ -6,6 +6,7 @@ Created on Thu Apr  4 18:18:12 2019
 @author: martin
 """
 import numpy as np
+import morpionML as mpl
 
 
 class Combinatoire:
@@ -42,13 +43,19 @@ class Combinatoire:
 
 class Cell:   
     def __init__(self,mark,coordinates):
-        self.mark = mark
-        self.coordinates = coordinates 
+        self.mark = mark   # O or X 
+        self.coordinates = coordinates  # numpy array 
     
     def __repr__(self):
         return str(self.mark)
             
 
+"""
+Class morpion represents a game of Tic Tac Toe
+There is no logic of player (human or AI)
+Only the possibility to play a random cell of the board
+
+"""
 class Morpion:
     
      def __init__(self,dim,side):
@@ -63,16 +70,15 @@ class Morpion:
          self.board = np.empty(dtype=object,shape=s)  # the game board, players  X or O
          self.starter=np.random.randint(0,2)   # 1 the cross starts 0 the O starts
          self.moves = np.zeros(dtype=int,shape=(0,dim))  # the moves made on this game
-         self.game_over=False
+         self.is_game_over=False
          self.initialize_board()
 
 
- 
+     """
      # return a string representation of the game
      # each line is one move. For instance :
-     #1 2
-     #0 0
-     #2 3
+     1 2\n0 0\2 3
+     """
      def output_moves(self):
          result = ""
          for i in range(self.moves.shape[0]):
@@ -87,9 +93,11 @@ class Morpion:
          for line in lines:
              self.playS(line)
 
-     # fill the  boards with the cells
+     # fill the  boards with empty cells
      def initialize_board(self):
             ensemble = np.arange(self.side)
+            self.moves = np.zeros(dtype=int,shape=(0,self.dim)) # make sure there is no moves
+            self.is_game_over=False  # the game is not over
             liste = Combinatoire.cartesian_product(self.dim,ensemble)
             for cell in liste:
                 t= Combinatoire.tuple(cell) 
@@ -97,21 +105,38 @@ class Morpion:
 
      # simplement en 2D pour le moment
      def board_as_string(self):
-        top = "+---"+"-"*(self.side-1)*4+"+\n"
+        indices = np.arange(self.side)
+        indices = indices.tolist()
+        indices = [str(i) for i in indices]
+        
+        top = "    +---"+"-"*(self.side-1)*4+"+\n"
         board_s = top
         for i in range(self.side):
-            row = self.board[i,:]
+            row = self.board[i,:]  # gets the i-th row
             liste = row.tolist()
             liste = [i.mark for i in liste]
-            board_s += "| "+" | ".join(liste)+" | \n"
+            board_s += str(i)+" . "+"| "+" | ".join(liste)+" | \n"
             board_s += top
+        
+        board_s += "      "+"   ".join(indices)+" \n"
+        
+        
+        board_s +="    "
         board_s =  board_s.replace("_"," ")
-        if self.game_over:
+        board_s =  board_s.replace(".","_")
+        if self.is_game_over:
             if self.who_is_winner()=="":
                 board_s +="Game over ! \nThere is no winner."
             else : board_s +="Game over ! \n"+self.who_is_winner()+" is the winner."
         else : board_s +="next player  : "+self.who_is_playing() 
         return board_s    
+
+
+     def who_is_starting(self):
+         if  self.starter==0:
+             return "O"
+         else:
+             return "X" 
 
 
 
@@ -121,6 +146,17 @@ class Morpion:
              return "O"
          else:
              return "X" 
+
+#      """
+#      Cancels the previous move
+#      """
+     def cancel_previous_move(self):
+         move = self.moves[-1,:]
+         t= Combinatoire.tuple(move) 
+         self.board[t]=Cell('_',move)
+         self.is_game_over = False
+         self.moves = self.moves[0:-1,:] # remove the last move
+         return move
 
      # pick a random free cell for the next play 
      def play_random(self):
@@ -138,18 +174,18 @@ class Morpion:
      # cell is a numpy array 
      def play(self,cell):  
          tcell = Combinatoire.tuple(cell)
-
-         if self.game_over:
+         if self.is_game_over:             
              return False
+         
          player = self.who_is_playing()
          if self.board[tcell].mark=='_':
              self.board[tcell].mark=player
              self.moves = np.vstack((self.moves,cell))
              # teste s'il reste des cases à jouer
              if self.board[self.get_marks()=='_'].size==0 :
-                 self.game_over=True
+                 self.is_game_over=True
              if self.winner_game() is not None:
-                 self.game_over=True
+                 self.is_game_over=True
              return True
          return False
 
@@ -173,7 +209,7 @@ class Morpion:
 
      # two cells of the board are given
      # this tells if a winning line ("break through") can be drawn through those cells
-     def is_break_through(self,cellA,cellB):
+     def __is_break_through(self,cellA,cellB):
              Delta = cellA-cellB
              value = 0
              reponse = True
@@ -186,7 +222,7 @@ class Morpion:
              return reponse
 
         # are those three cells aligned ? 
-     def are_aligned(self,cellA,cellB,cellC):
+     def __are_aligned(self,cellA,cellB,cellC):
             Delta1 = cellC-cellB
             Delta2 = cellB-cellA
             nul = np.zeros(dtype=int,shape=(0,self.dim))
@@ -207,18 +243,18 @@ class Morpion:
          cellA = self.moves[winner[0]] 
          for winner[1] in range(winner[0]-2,0,-2):
                  cellB=self.moves[winner[1]]
-                 if self.is_break_through(cellA,cellB):
+                 if self.__is_break_through(cellA,cellB):
                      count = 2
                      for k in range (winner[1]-2,-1,-2):
                          cellC=self.moves[k]
-                         if self.are_aligned(cellA,cellB,cellC):
+                         if self.__are_aligned(cellA,cellB,cellC):
                              winner[count]=k
                              count+=1
                          if count==self.side: 
                              return winner
                          
      def who_is_winner(self):
-         if self.game_over:
+         if self.is_game_over:
              if self.winner_game() is None:
                  return ""
              elif self.moves[:,1].size%2 == self.starter:
@@ -233,33 +269,57 @@ if __name__ == '__main__':
     
     
     m = Morpion(2,3)
-    moves="1 1\n0 1\n0 0"
-    m.input_moves(moves)
+    moves="0 0\n2 0\n0 1\n2 1"
+  #  m.input_moves(moves)
+    
+#    theta = mpl.load_weights()    
+    
+    print(m.board_as_string())    
+    
+ #   print(np.round(mpl.predict(m,theta),2))    
 
-
-
-    print(m.who_is_playing()," starts")  
-    while True:
+    while True :
+       
+        mpl.playDeep(m)
+        print(m.board_as_string()) 
+        print("------------------")
+    
+        if m.is_game_over : break      
+    #    print(np.round(mpl.predict(m,theta),2))      
+        m.play_random()
         print(m.board_as_string())
-        stringcell = input()
-        if stringcell == "" : break
-        boolean = m.playS(stringcell)
-        if m.game_over: break
+#        print("------------------")
         
-        
-        
-#        if m.play_random() is not None:         
-#           counter += 1
-#           if m.game_over:
-#              break    # there is one winner
-#        else :break    # the game is full
+        if m.is_game_over : break
+     
+#    print(m.cancel_previous_move())
+#
+#    print(m.who_is_playing()," starts")  
+#    while True:
+#        print(m.board_as_string())
+#        if m.game_over: break
+#        stringcell = input()
+#        if stringcell == "" : break
+#           
+#        boolean = m.playS(stringcell)
+#        
+#        
+#        
+#        
+##        if m.play_random() is not None:         
+##           counter += 1
+##           if m.game_over:
+##              break    # there is one winner
+##        else :break    # the game is full
+#    
+#    
+##    game = m.winner_game()        
+##    print(game)
+#    print(m.board_as_string())
+#    print(m.who_is_winner())
+#    
+#    print(m.output_moves())
+##    print(counter," coups")
     
-    
-#    game = m.winner_game()        
-#    print(game)
-    print(m.board_as_string())
-    print(m.who_is_winner())
-    
-    print(m.output_moves())
-#    print(counter," coups")
+
     
