@@ -11,7 +11,7 @@ import morpionML as mpl
 
 class Combinatoire:
 # makes the list (as numpy arrays) of the elements of ensemble^n
-# set is a numpy array  
+# ensemble is a numpy array  
    @staticmethod 
    def cartesian_product(n,ensemble):
        if n==1:
@@ -25,9 +25,9 @@ class Combinatoire:
            for i in iter(ensemble):
                for j in range(0,sous_liste[:,0].size):
                    element=sous_liste[j,]
-                   element = np.append(element,i)
+                   element = np.append(i,element)
                    liste = np.vstack((element,liste))
-           return liste    
+           return liste  
    # given a numpyarray, returns a tuple with it's components    
    @staticmethod     
    def tuple(array):
@@ -37,7 +37,32 @@ class Combinatoire:
         return t    
          
 
-
+     # build a frame around the board (as a string), n is the width (and height) of each cell
+def frame(board_s,n=1,spaces=" "):
+         lines = str.splitlines(board_s)
+         result = ""
+         for line in lines:
+             chunks = [ line[i:i+1] for i in range(0, len(line), 1) ]
+             result += spaces+(spaces*2).join(chunks)+spaces+'\n'    
+         
+         if n>0: # there is a frame
+             lines = str.splitlines(result)
+             result=''
+             n2 = n*(1+len(spaces)*2) 
+    
+             for line in lines:
+                 chunks = [ line[i:i+n2] for i in range(0, len(line), n2) ]
+                 result += '|'+'|'.join(chunks)+'|\n'
+             lines = str.splitlines(result)
+             width = len(lines[0])       
+             linesep = '-'*width+"\n"       
+             result = ""
+             for i in range(len(lines)):
+                 if i % n == 0:
+                     result += linesep
+                 result += lines[i]+"\n"           
+             result += linesep 
+         return result
 
 
 
@@ -103,33 +128,70 @@ class Morpion:
                 t= Combinatoire.tuple(cell) 
                 self.board[t]=Cell('_',cell)    
 
+
+
+        
      # simplement en 2D pour le moment
-     def board_as_string(self):
-        indices = np.arange(self.side)
-        indices = indices.tolist()
-        indices = [str(i) for i in indices]
-        
-        top = "    +---"+"-"*(self.side-1)*4+"+\n"
-        board_s = top
-        for i in range(self.side):
-            row = self.board[i,:]  # gets the i-th row
-            liste = row.tolist()
-            liste = [i.mark for i in liste]
-            board_s += str(i)+" . "+"| "+" | ".join(liste)+" | \n"
-            board_s += top
-        
-        board_s += "      "+"   ".join(indices)+" \n"
-        
-        
-        board_s +="    "
-        board_s =  board_s.replace("_"," ")
-        board_s =  board_s.replace(".","_")
-        if self.is_game_over:
-            if self.who_is_winner()=="":
-                board_s +="Game over ! \nThere is no winner."
-            else : board_s +="Game over ! \n"+self.who_is_winner()+" is the winner."
-        else : board_s +="next player  : "+self.who_is_playing() 
-        return board_s    
+     def board_as_string(self,display_info=True):
+         board_s=""
+         if self.dim ==2 :     
+     #       indices = np.arange(self.side)
+     #       indices = indices.tolist()
+     #       indices = [str(i) for i in indices]
+            
+     #       top = "    +---"+"-"*(self.side-1)*4+"+ \n"
+     #       board_s = top
+            for i in range(self.side):
+                row = self.board[i,:]  # gets the i-th row
+                liste = row.tolist()
+                liste = [i.mark for i in liste]
+       #         board_s += str(i)+" . "+"| "+" | ".join(liste)+" | \n"
+                board_s += "".join(liste)+"\n"
+       #         board_s += top
+            
+#            board_s += "      "+"   ".join(indices)+"   \n"
+            
+            
+#            board_s +="    "
+         elif self.dim ==4 :
+#            ensemble = np.arange(self.side)
+#            dim = self.dim-2
+#            liste = Combinatoire.cartesian_product(dim,ensemble)
+#            liste = np.flip(liste,0)
+             for i in range(self.side): 
+                row=()
+                for j in range(self.side):
+                    m2d = Morpion(side=self.side,dim=2)
+                    m2d.starter=self.starter
+                    m2d.board = self.board[i,j,:,:] 
+                    temp = str.splitlines(m2d.board_as_string(False))
+                    temp = np.array(temp)
+                    temp.shape = (temp.shape[0],1)
+                    row += (temp,)
+                row = np.hstack(row)
+                for k in range(row.shape[0]):
+                    board_s+=((''.join([''.join(x) for x in row[k]])))+"\n"
+ 
+         if display_info:
+             if self.dim==4 : board_s = frame(board_s,n=4,spaces=" ")
+             else :  board_s = frame(board_s,n=1,spaces=" ")
+             board_s =  board_s.replace("_"," ")
+             board_s =  board_s.replace(".","_")
+             if self.is_game_over:
+                 if self.who_is_winner()=="":
+                     board_s +="Game over ! \nThere is no winner."
+                 else : board_s +="Game over ! \n"+self.who_is_winner()+" is the winner."
+             else : board_s +="next player  : "+self.who_is_playing()         
+         return board_s  
+#            
+               
+                
+                
+    
+
+            
+                
+            
 
 
      def who_is_starting(self):
@@ -238,6 +300,7 @@ class Morpion:
      # return the winning line (when they were played)
      def winner_game(self):
          size = self.moves[:,1].size-1
+         if size<self.side : return None
          winner = np.zeros(shape=(self.side),dtype=int)
          winner[0] = size
          cellA = self.moves[winner[0]] 
@@ -266,60 +329,25 @@ class Morpion:
 
 
 if __name__ == '__main__':   
-    
+  
+
+    from keras.models import load_model
+#    
+    model2 = load_model('model_keras.h5')
+    model4 = load_model('four_dimension.h5')
     
     m = Morpion(2,3)
-    moves="0 0\n2 0\n0 1\n2 1"
-  #  m.input_moves(moves)
     
-#    theta = mpl.load_weights()    
+ 
     
-    print(m.board_as_string())    
     
- #   print(np.round(mpl.predict(m,theta),2))    
-
     while True :
-       
-        mpl.playDeep(m)
-        print(m.board_as_string()) 
-        print("------------------")
-    
-        if m.is_game_over : break      
-    #    print(np.round(mpl.predict(m,theta),2))      
         m.play_random()
-        print(m.board_as_string())
-#        print("------------------")
-        
+        mpl.playAI(m,model2)
         if m.is_game_over : break
-     
-#    print(m.cancel_previous_move())
-#
-#    print(m.who_is_playing()," starts")  
-#    while True:
-#        print(m.board_as_string())
-#        if m.game_over: break
-#        stringcell = input()
-#        if stringcell == "" : break
-#           
-#        boolean = m.playS(stringcell)
-#        
-#        
-#        
-#        
-##        if m.play_random() is not None:         
-##           counter += 1
-##           if m.game_over:
-##              break    # there is one winner
-##        else :break    # the game is full
-#    
-#    
-##    game = m.winner_game()        
-##    print(game)
-#    print(m.board_as_string())
-#    print(m.who_is_winner())
-#    
-#    print(m.output_moves())
-##    print(counter," coups")
+    print(m.board_as_string())
+
+
     
 
     

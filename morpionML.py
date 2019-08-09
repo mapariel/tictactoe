@@ -115,8 +115,20 @@ def playAI(morpion,model):
     if morpion.is_game_over: 
         return None
     player = morpion.who_is_playing()
+    # try to win
     x = get_features(morpion,player)
-    probas = model.predict(x)  
+    probas = model.predict(x)
+    # try not to loose
+    x = x*(-1)
+
+    # gets the best out of those predictions
+    probas2 = model.predict(x)    
+    Probas = np.vstack((probas,probas2))    
+    probas = np.max(Probas,axis=0)
+    probas.shape = (1,probas.shape[0])
+    
+    
+    
     side = morpion.side
     dim = morpion.dim
     dims = (side,)
@@ -158,8 +170,7 @@ if __name__ == '__main__':
     np.savetxt("X_train",X,delimiter=",")
     np.savetxt("y_train",y,delimiter=",")
 
-#    
-#    print("validation...")
+
     m_val=int(m*0.2)
 
     X_val,y_val = simulation(m=m_val,side=side,dim=dim)
@@ -167,27 +178,8 @@ if __name__ == '__main__':
 #    np.savetxt("y_val",y_val,delimiter=",")
 #
 #
-#
-#    scores = model.evaluate(X_val, y_val, verbose=1)
-#    print("Accuracy (validation): %.2f%%" % (scores[1]*100))
-#    print("loss (validation): ",round(scores[0],3))
-    
-
-
-  
-
-#    model.fit(X, Y, epochs=150, batch_size=10) 
-#    model.save('model_keras.h5') 
 
     model = load_model('model_keras.h5') 
-
-
-    """       
-    
-
-
-    """
-   
 #    
 #        ##   deep learning model
 #    model = Sequential()
@@ -206,8 +198,6 @@ if __name__ == '__main__':
     print("Accuracy (training): %.2f%%" % (scores[1]*100))
     scores = model.evaluate(X_val, Y_val, verbose=1)
     print("Accuracy (validation): %.2f%%" % (scores[1]*100))
-    
-
 
 
 #  
