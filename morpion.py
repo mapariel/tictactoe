@@ -135,29 +135,12 @@ class Morpion:
      def board_as_string(self,display_info=True):
          board_s=""
          if self.dim ==2 :     
-     #       indices = np.arange(self.side)
-     #       indices = indices.tolist()
-     #       indices = [str(i) for i in indices]
-            
-     #       top = "    +---"+"-"*(self.side-1)*4+"+ \n"
-     #       board_s = top
             for i in range(self.side):
                 row = self.board[i,:]  # gets the i-th row
                 liste = row.tolist()
                 liste = [i.mark for i in liste]
-       #         board_s += str(i)+" . "+"| "+" | ".join(liste)+" | \n"
                 board_s += "".join(liste)+"\n"
-       #         board_s += top
-            
-#            board_s += "      "+"   ".join(indices)+"   \n"
-            
-            
-#            board_s +="    "
          elif self.dim ==4 :
-#            ensemble = np.arange(self.side)
-#            dim = self.dim-2
-#            liste = Combinatoire.cartesian_product(dim,ensemble)
-#            liste = np.flip(liste,0)
              for i in range(self.side): 
                 row=()
                 for j in range(self.side):
